@@ -97,6 +97,28 @@ $env:PIXABAY_API_KEY="test-pix"; $env:PIXABAY_API_URL="http://127.0.0.1:5191/api
 node server.mjs
 ```
 
+## Vercel 배포
+
+GitHub 저장소를 Vercel 프로젝트에 연결하면 `main`에 푸시할 때마다 자동 배포됩니다. 로컬 `server.mjs`는 개발용이고, Vercel에서는 아래 함수가 같은 일을 합니다.
+
+| 파일 | 역할 |
+|---|---|
+| `public/` | 화면(`index.html`)과 `story.json` — 정적 파일로 제공 |
+| `api/places.js` | `/api/places` — 공공데이터 API 호출·병합. 결과는 Vercel CDN이 1시간 캐시 |
+| `api/config.js` | `/api/config` — 이미지 사용 여부, 신고 메일 |
+| `api/image.js` | `/api/image` — Pixabay 이미지를 **Vercel Blob**에 저장해 제공 |
+| `lib/places.mjs`, `adapter.mjs` | 위 함수와 로컬 서버가 함께 쓰는 호출·해석 로직 |
+| `vercel.json` | 정적 폴더(`public`)와 함수 제한 시간 설정 |
+
+Vercel 프로젝트 **Settings → Environment Variables**에 입력합니다(저장소에는 올리지 않음). 변수를 추가·수정한 뒤에는 **Redeploy**해야 반영됩니다.
+
+- 필수: `JEJU_CULTURE_INFO_KEY`, `JEJU_CULTURE_LOCATION_KEY`, `JEJU_CULTURE_INFO_URL`, `JEJU_CULTURE_LOCATION_URL`
+- 선택: `FEEDBACK_EMAIL`, `PIXABAY_API_KEY`
+- 사진을 쓰려면 **Storage → Blob** 저장소를 만들어 이 프로젝트에 연결하세요(`BLOB_READ_WRITE_TOKEN`이 자동 생성됨). Pixabay 키나 Blob 중 하나라도 없으면 시대별 기본 그림이 나옵니다.
+- 화면에 “자료를 불러오지 못했어요”가 뜨면 **Vercel → Logs**에서 `[places]` 줄을 확인하세요. 원인(키 거부, 주소 오류, 응답 형식 불일치 등)이 적혀 있고 키 값은 포함되지 않습니다. 브라우저 Network 탭의 `/api/places` 응답에도 같은 문장이 나옵니다.
+
+함수 동작 확인: 가짜 API 두 개(`mock/`)를 띄운 뒤 `node test/handlers.mjs` (실제 키·네트워크 불필요, 13개 검사).
+
 ## 알아둘 점
 
 - 시대 구분은 자료의 제목·주제·내용을 보고 이 프로젝트에서 정리한 것입니다. 자료에 없는 일반 상식이 섞인 곳은 화면에 ‘ℹ️’로 밝힙니다.

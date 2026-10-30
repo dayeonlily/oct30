@@ -2,3 +2,5 @@
 .env.*
 !.env.example
 cache/
+node_modules/
+.vercel/

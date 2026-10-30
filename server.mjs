@@ -5,18 +5,14 @@ import http from 'node:http';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { buildUrl, extractPage, mergePlaces, normalizeKey } from './adapter.mjs';
+import { fetchPlaces, missingEnv } from './lib/places.mjs';
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC = path.join(ROOT, 'public');
 const env = process.env;
 
-// 필수 설정: 키 2개(환경변수)와 API 주소 2개(환경변수, 비밀 아님)
-const SOURCES = [
-  { label: '위치정보', keyVar: 'JEJU_CULTURE_LOCATION_KEY', urlVar: 'JEJU_CULTURE_LOCATION_URL' },
-  { label: '일반정보', keyVar: 'JEJU_CULTURE_INFO_KEY', urlVar: 'JEJU_CULTURE_INFO_URL' },
-];
-const missing = SOURCES.flatMap(s => [s.keyVar, s.urlVar].filter(v => !String(env[v] ?? '').trim()));
+// 필수 설정: 키 2개(환경변수)와 API 주소 2개(환경변수, 비밀 아님). 호출 로직은 lib/places.mjs(Vercel 함수와 공용)
+const missing = missingEnv(env);
 if (missing.length) {
   console.error('다음 환경변수가 설정되지 않았습니다:\n  ' + missing.join('\n  ') + '\n\n설정 방법은 README.md 를 참고하세요.');
   process.exit(1);
@@ -32,27 +28,6 @@ const IMG_META = path.join(ROOT, 'cache', 'images.json');
 const PORT = Number(env.PORT) || 5200;
 const HOST = env.HOST || '127.0.0.1';
 const TTL_MS = (Number(env.JEJU_CULTURE_CACHE_MIN) || 60) * 60_000;
-const PER_PAGE = 100, MAX_PAGES = 50;
-
-async function fetchAll(src) {
-  const base = env[src.urlVar].trim();
-  const key = normalizeKey(env[src.keyVar]);
-  const rows = [];
-  for (let page = 1; page <= MAX_PAGES; page++) {
-    const res = await fetch(buildUrl(base, key, page, PER_PAGE), { signal: AbortSignal.timeout(15_000) })
-      .catch(() => { throw new Error(`${src.label} API에 연결하지 못했습니다`); });
-    // 오류 메시지에는 요청 URL(키 포함)을 절대 넣지 않는다.
-    if (res.status === 401 || res.status === 403) throw new Error(`${src.label} API가 인증키를 거부했습니다 (${src.keyVar} 확인)`);
-    if (!res.ok) throw new Error(`${src.label} API 오류 (HTTP ${res.status})`);
-    let json;
-    try { json = await res.json(); } catch { throw new Error(`${src.label} API 응답이 JSON이 아닙니다`); }
-    let got;
-    try { got = extractPage(json); } catch (e) { throw new Error(`${src.label}: ${e.message}`); }
-    rows.push(...got.rows);
-    if (!got.rows.length || got.rows.length < PER_PAGE || (got.total && rows.length >= got.total)) break;
-  }
-  return rows;
-}
 
 let cache = null;   // { at, places }
 let inflight = null;
@@ -60,8 +35,7 @@ async function loadPlaces() {
   if (cache && Date.now() - cache.at < TTL_MS) return cache;
   inflight ??= (async () => {
     try {
-      const [loc, info] = await Promise.all(SOURCES.map(fetchAll));
-      cache = { at: Date.now(), places: mergePlaces(loc, info) };
+      cache = { at: Date.now(), places: await fetchPlaces(env) };
       return cache;
     } finally { inflight = null; }
   })();
