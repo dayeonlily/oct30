@@ -36,7 +36,18 @@ export function extractPage(json) {
     if (!Array.isArray(items)) items = items ? [items] : [];
     return { rows: items, total: Number(body.totalCount) || null };
   }
-  throw new Error('인식할 수 없는 API 응답 형식입니다');
+  throw new Error('인식할 수 없는 API 응답 형식입니다 (구조: ' + describeShape(json) + ')');
+}
+
+// 응답의 구조(필드 이름·배열 길이·짧은 값)만 요약한다. 오류 메시지용이라 길이를 제한한다.
+export function describeShape(v, depth = 0) {
+  if (Array.isArray(v)) return `[${v.length}개${v.length && depth < 4 ? ': ' + describeShape(v[0], depth + 1) : ''}]`;
+  if (v && typeof v === 'object') {
+    if (depth >= 4) return '{…}';
+    return '{' + Object.entries(v).slice(0, 14).map(([k, x]) => `${k}: ${describeShape(x, depth + 1)}`).join(', ') + '}';
+  }
+  if (typeof v === 'string') return JSON.stringify(v.length > 40 ? v.slice(0, 40) + '…' : v);
+  return String(v);
 }
 
 const pick = (row, ...names) => {
