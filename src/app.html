@@ -1,0 +1,699 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>제주 시간여행 스탬프 투어</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+:root{--ok:#1f7a45;--bad:#b32d1f}
+body[data-mode=kids]{--bg:#fff7e6;--panel:#fff;--ink:#3b2a1a;--muted:#6e5a44;--acc:#c2500a;--acc-soft:#ffe3c2;--line:#ecd5b4;--r:20px;font-size:17px}
+body[data-mode=teen]{--bg:#f2f5fa;--panel:#fff;--ink:#14213d;--muted:#52607a;--acc:#1d4e89;--acc-soft:#dbe6f5;--line:#ccd5e4;--r:10px;font-size:15px}
+body.big[data-mode=kids]{font-size:21px}
+body.big[data-mode=teen]{font-size:19px}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:"Malgun Gothic","Apple SD Gothic Neo",system-ui,sans-serif;line-height:1.65;word-break:keep-all;overflow-wrap:break-word}
+button{font:inherit;color:inherit;cursor:pointer;min-height:44px}
+:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+h1,h2,h3,p{margin:0}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.skip{position:absolute;left:8px;top:-60px;background:var(--acc);color:#fff;padding:8px 14px;border-radius:8px;z-index:100}
+.skip:focus{top:8px}
+.wrap{max-width:980px;margin:0 auto;padding:0 16px}
+
+/* 상단 */
+.top{background:var(--panel);border-bottom:2px solid var(--line);position:sticky;top:0;z-index:20}
+.top .wrap{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding-top:8px;padding-bottom:8px}
+.brand{font-weight:800;font-size:1.1em;margin-right:auto}
+.seg{display:flex;border:2px solid var(--acc);border-radius:99px;overflow:hidden}
+.seg button{border:0;background:none;padding:2px 16px;font-weight:700;color:var(--acc)}
+.seg button[aria-pressed=true]{background:var(--acc);color:#fff}
+.tool{border:2px solid var(--line);background:var(--panel);border-radius:99px;padding:2px 12px;font-weight:700;font-size:.9em}
+.tool[aria-pressed=true]{background:var(--acc-soft);border-color:var(--acc)}
+.prog{display:flex;align-items:center;gap:8px;font-size:.88em;color:var(--muted);flex:1 1 100%}
+.bar{flex:1;height:12px;border-radius:99px;background:var(--acc-soft);overflow:hidden;max-width:360px}
+.bar i{display:block;height:100%;background:var(--acc);border-radius:99px;transition:width .4s}
+.rank{font-weight:700;color:var(--acc)}
+.tabs{display:flex;flex-wrap:wrap;gap:6px;padding:10px 0}
+.tabs button{border:2px solid var(--line);background:var(--panel);border-radius:99px;padding:2px 16px;font-weight:700}
+.tabs button[aria-selected=true]{background:var(--acc);border-color:var(--acc);color:#fff}
+
+/* 홈 */
+.hero{background:var(--panel);border:2px solid var(--line);border-radius:var(--r);padding:18px 20px;margin:6px 0 18px}
+.hero h1{font-size:1.5em;margin-bottom:4px}
+.hero p{color:var(--muted)}
+.next{margin-top:12px;border:0;background:var(--acc);color:#fff;border-radius:99px;padding:6px 18px;font-weight:700}
+.timeline{position:relative;padding-left:26px}
+.timeline::before{content:"";position:absolute;left:9px;top:8px;bottom:8px;width:4px;border-radius:4px;background:var(--line)}
+.era{position:relative;background:var(--panel);border:2px solid var(--line);border-left:8px solid var(--c);border-radius:var(--r);padding:14px 16px 16px;margin-bottom:16px}
+.era::before{content:"";position:absolute;left:-34px;top:20px;width:16px;height:16px;border-radius:50%;background:var(--c);border:3px solid var(--bg)}
+.eh{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.eh .em{font-size:2em;line-height:1}
+.eh h2{font-size:1.25em}
+.yr{font-size:.85em;color:var(--muted)}
+.ep{margin-left:auto;font-weight:800;color:var(--c)}
+.ep.done::after{content:" 🏅"}
+.intro{margin:8px 0 12px}
+.spots{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
+.spot{display:flex;align-items:center;gap:10px;text-align:left;background:var(--bg);border:2px solid var(--line);border-radius:14px;padding:8px 10px;min-height:56px}
+.spot:hover{border-color:var(--c)}
+.spot .st{flex:none;width:42px;height:42px;border-radius:50%;display:grid;place-items:center;font-size:1.3em;border:3px dashed #8a8a8a;color:#6b6b6b;font-weight:800;background:#fff}
+.spot.got .st{border:3px solid var(--c);color:var(--c);background:#fff;transform:rotate(-8deg)}
+.spot .nm{font-weight:700;line-height:1.3;font-size:.92em}
+.spot .ar{display:block;font-weight:400;color:var(--muted);font-size:.8em}
+.spot .lb{display:block;font-size:.75em;font-weight:700;color:var(--muted)}
+.spot.got .lb{color:var(--ok)}
+.think{margin-top:12px;padding:10px 12px;border-radius:10px;background:var(--acc-soft);font-size:.92em}
+
+/* 지도 */
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.chips button{border:2px solid var(--line);background:var(--panel);border-radius:99px;padding:2px 12px;font-size:.88em}
+.chips button[aria-pressed=true]{background:var(--acc);border-color:var(--acc);color:#fff}
+#tmap{height:min(70vh,560px);border-radius:var(--r);border:2px solid var(--line);z-index:0}
+.nomap{padding:30px;text-align:center;background:var(--panel);border:2px dashed var(--line);border-radius:var(--r);color:var(--muted)}
+.pinI{background:none;border:0}
+.pinI span{display:grid;place-items:center;width:36px;height:36px;border-radius:50%;background:var(--c);border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.4);font-size:18px;position:relative}
+.pinI.got span::after{content:"✓";position:absolute;right:-6px;top:-6px;width:18px;height:18px;border-radius:50%;background:var(--ok);color:#fff;font:700 12px/18px sans-serif;text-align:center;border:2px solid #fff}
+.pop{font:14px/1.5 "Malgun Gothic",sans-serif;min-width:170px}
+.pop b{font-size:15px}
+.pop button{margin-top:6px;border:0;border-radius:99px;background:#1d4e89;color:#fff;padding:4px 12px;min-height:36px}
+
+/* 스탬프북 · 카드 */
+.card{background:var(--panel);border:2px solid var(--line);border-radius:var(--r);padding:16px 18px;margin-bottom:16px}
+.card h3{font-size:1.05em;margin-bottom:6px}
+.muted{color:var(--muted);font-size:.9em}
+.sum{display:flex;flex-wrap:wrap;gap:12px 28px;align-items:center}
+.sum .big{font-size:2.2em;font-weight:800;color:var(--acc);line-height:1}
+.brow h3{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.brow h3 .tag{margin-left:auto;font-size:.8em;color:var(--muted);font-weight:400}
+.sgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:10px}
+.slot{aspect-ratio:1;border-radius:50%;display:grid;place-items:center;text-align:center;padding:8px;font-size:.72em;line-height:1.25;border:3px dashed #8a8a8a;color:#6b6b6b;background:#fafafa;min-height:0}
+.slot.got{border:4px double var(--c);color:var(--c);background:#fff;font-weight:700;transform:rotate(var(--rot,-6deg));box-shadow:0 2px 0 rgba(0,0,0,.08)}
+.slot .e{display:block;font-size:2em;line-height:1.1}
+.slot small{display:block;color:var(--muted);font-weight:400;font-size:.9em}
+.cert{text-align:center;border:6px double var(--acc);background:#fffdf6;padding:26px 18px}
+.cert h2{font-size:1.6em;margin-bottom:10px}
+.cert input{font:inherit;font-size:1.1em;text-align:center;border:0;border-bottom:2px solid var(--acc);background:none;width:min(260px,80%);padding:4px;color:var(--ink)}
+.row{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+.btn{border:2px solid var(--acc);background:var(--panel);color:var(--acc);border-radius:99px;padding:2px 16px;font-weight:700}
+.btn.solid{background:var(--acc);color:#fff}
+.reset{border:2px solid var(--line);background:none;border-radius:99px;padding:2px 14px;color:var(--muted);font-size:.85em}
+textarea,.search{width:100%;font:inherit;font-size:.9em;border:2px solid var(--line);border-radius:10px;padding:8px 10px;background:var(--panel);color:var(--ink)}
+
+/* 더 알아보기 */
+.more-list{display:grid;gap:8px}
+.more-item{background:var(--panel);border:2px solid var(--line);border-radius:12px;padding:8px 12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.more-item b{flex:1 1 180px}
+.more-item a{color:var(--acc);font-weight:700}
+
+/* 모달 */
+dialog{width:min(640px,calc(100% - 20px));max-height:92vh;padding:0;border:0;border-radius:var(--r);background:var(--panel);color:var(--ink);overflow:auto}
+dialog::backdrop{background:rgba(20,20,30,.55)}
+.mh{display:flex;align-items:center;gap:8px;background:var(--c);color:#fff;padding:8px 14px;font-weight:700;position:sticky;top:0;z-index:2}
+.mh .x{margin-left:auto;border:0;background:rgba(255,255,255,.25);color:#fff;border-radius:50%;width:44px;height:44px;font-size:1.1em}
+.mb{padding:16px 18px 20px}
+.mb h2{font-size:1.4em}
+.loc{color:var(--muted);font-size:.88em;margin:2px 0 10px}
+.loc a,.src a,.cap a{color:var(--acc)}
+.fig{margin:0 0 12px}
+.fig .illus{height:150px;border-radius:12px;display:grid;place-items:center;font-size:64px;background:linear-gradient(135deg,var(--c),color-mix(in srgb,var(--c) 45%,#fff))}
+.fig img{width:100%;max-height:300px;object-fit:cover;border-radius:12px;display:block;background:#ddd}
+.cap{font-size:.78em;color:var(--muted);margin-top:4px}
+.warn{background:#fff4e5;border:2px solid #e0a040;color:#5a3a00;border-radius:10px;padding:8px 12px;margin-bottom:10px;font-size:.92em}
+.story{background:var(--bg);border-radius:12px;padding:12px 14px;margin:8px 0 8px}
+.tts{border:2px solid var(--line);background:var(--panel);border-radius:99px;padding:2px 12px;font-size:.88em;margin:0 6px 8px 0}
+.term{border:0;border-bottom:2px dotted var(--acc);background:none;color:inherit;padding:0;min-height:0;font-weight:700;cursor:help}
+.gloss{background:var(--acc-soft);border-radius:10px;padding:8px 12px;margin-bottom:8px;font-size:.92em}
+.note{font-size:.85em;color:var(--muted);border-left:4px solid var(--line);padding:2px 10px;margin:6px 0 12px}
+.src{font-size:.85em;color:var(--muted);margin-bottom:12px}
+.src summary{cursor:pointer;font-weight:700}
+.src dl{margin:6px 0 0;display:grid;grid-template-columns:64px 1fr;gap:2px 8px}
+.src dt{color:var(--muted)}.src dd{margin:0;word-break:break-word}
+.quiz h3{font-size:1.05em;margin-bottom:6px}
+.quiz .q{font-weight:700;margin-bottom:8px}
+.opts{display:grid;gap:8px}
+.opts button{text-align:left;padding:8px 14px;border:2px solid var(--line);border-radius:12px;background:var(--panel);font-weight:600}
+.opts button:hover:not(:disabled){border-color:var(--acc)}
+.opts button.bad{border-color:var(--bad);background:#fdecea;color:var(--bad)}
+.opts button.ok{border-color:var(--ok);background:#e6f6ec;color:var(--ok)}
+.opts button:disabled{cursor:default}
+.fb{min-height:1.6em;margin-top:8px;font-weight:700}
+.fb.bad{color:var(--bad)}.fb.ok{color:var(--ok)}
+.explain{background:#eef7f0;border:2px solid #b9dcc4;border-radius:12px;padding:10px 14px;margin-bottom:10px}
+.explain b{color:var(--ok)}
+.award{display:flex;align-items:center;gap:14px;border-radius:14px;background:var(--acc-soft);padding:12px 14px}
+.award .stamp{flex:none;width:76px;height:76px;border-radius:50%;border:5px double var(--c);color:var(--c);display:grid;place-items:center;font-size:2.4em;background:#fff;transform:rotate(-10deg)}
+.award.pop-in .stamp{animation:stampIn .55s cubic-bezier(.2,1.6,.4,1)}
+.report{display:inline-block;margin-top:12px;font-size:.82em;color:var(--muted)}
+@keyframes stampIn{0%{transform:scale(2.4) rotate(-40deg);opacity:0}100%{transform:scale(1) rotate(-10deg);opacity:1}}
+@keyframes shake{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+.opts button.bad{animation:shake .3s}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+#toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(30px);background:var(--ink);color:#fff;padding:10px 20px;border-radius:99px;opacity:0;pointer-events:none;transition:.3s;z-index:50;max-width:90%;text-align:center}
+#toast.show{opacity:1;transform:translateX(-50%)}
+.welcome{width:min(680px,calc(100% - 20px))}
+.welcome .mb{text-align:center}
+.welcome h2{font-size:1.5em}
+.steps{display:flex;justify-content:center;gap:8px 18px;flex-wrap:wrap;margin:12px 0 4px;color:var(--muted);font-size:.9em}
+.pick{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px}
+.pick button{border:3px solid var(--line);border-radius:18px;background:var(--panel);padding:16px 8px;font-weight:800;font-size:1.1em;min-height:120px}
+.pick button .ic{display:block;font-size:2.2em}
+.pick button small{display:block;font-weight:400;color:var(--muted);margin-top:4px;font-size:.78em}
+.pick button:hover,.pick button:focus-visible{border-color:var(--acc);background:var(--acc-soft)}
+.info h3{margin-top:14px}
+.info ul{margin:4px 0 0;padding-left:20px}
+footer{max-width:980px;margin:10px auto 40px;padding:0 16px;color:var(--muted);font-size:.8em}
+footer button{border:0;background:none;color:var(--acc);text-decoration:underline;min-height:0;padding:0;font-size:1em}
+@media (max-width:560px){
+  .pick{grid-template-columns:1fr}
+  .timeline{padding-left:20px}.era::before{left:-28px}
+  .top{position:static}
+  .tabs{position:sticky;top:0;background:var(--bg);z-index:15;margin:0 -16px;padding:8px 16px}
+  .brand{flex:1 1 100%}
+}
+@media print{
+  body.print-cert *{visibility:hidden}
+  body.print-cert #cert,body.print-cert #cert *{visibility:visible}
+  body.print-cert #cert{position:absolute;left:0;top:0;width:100%}
+  body.print-cert #cert .noprint{display:none}
+}
+</style>
+</head>
+<body data-mode="kids">
+<a class="skip" href="#main">본문으로 바로가기</a>
+<header class="top">
+  <div class="wrap">
+    <div class="brand">🗺️ 제주 시간여행 스탬프 투어</div>
+    <div class="seg" role="group" aria-label="대상 선택">
+      <button type="button" data-mode="kids" aria-pressed="true">어린이용</button>
+      <button type="button" data-mode="teen" aria-pressed="false">청소년용</button>
+    </div>
+    <button type="button" class="tool" id="bigBtn" aria-pressed="false" title="글자를 크게 봐요">가 글자 크게</button>
+    <button type="button" class="tool" id="infoBtn" aria-haspopup="dialog">ℹ️ 안내</button>
+    <div class="prog"><span id="progText"></span><div class="bar" aria-hidden="true"><i id="progBar"></i></div><span class="rank" id="rank"></span></div>
+  </div>
+</header>
+
+<div class="wrap" id="main">
+  <div class="tabs" role="tablist" aria-label="화면 선택">
+    <button type="button" role="tab" id="t-road" aria-controls="road" data-tab="road" aria-selected="true">🛤️ 시간여행 길</button>
+    <button type="button" role="tab" id="t-map" aria-controls="mapTab" data-tab="map" aria-selected="false">📍 지도</button>
+    <button type="button" role="tab" id="t-book" aria-controls="book" data-tab="book" aria-selected="false">📒 스탬프북</button>
+    <button type="button" role="tab" id="t-more" aria-controls="more" data-tab="more" aria-selected="false">🔎 더 알아보기</button>
+  </div>
+
+  <section id="road" role="tabpanel" aria-labelledby="t-road"></section>
+  <section id="mapTab" role="tabpanel" aria-labelledby="t-map" hidden>
+    <div class="chips" id="chips"></div>
+    <div id="tmap"></div>
+  </section>
+  <section id="book" role="tabpanel" aria-labelledby="t-book" hidden></section>
+  <section id="more" role="tabpanel" aria-labelledby="t-more" hidden></section>
+</div>
+
+<footer>
+  제주특별자치도 <b>제주역사문화</b> 위치정보·일반정보(2022-12-09)를 바탕으로 쉽게 풀어 쓴 사이트예요.
+  시대 구분과 해설은 자료를 보고 정리한 것이니 <button type="button" id="infoBtn2">이 사이트 안내 보기</button>에서 자세히 확인하세요.
+</footer>
+
+<dialog id="dlg" aria-labelledby="dlgTitle"></dialog>
+
+<dialog id="info" class="info" aria-labelledby="infoTitle"></dialog>
+
+<dialog id="welcome" class="welcome" aria-labelledby="welcomeTitle">
+  <div class="mh" style="--c:var(--acc)">🗺️ 제주 시간여행 스탬프 투어</div>
+  <div class="mb">
+    <h2 id="welcomeTitle">누구와 함께 떠날까요?</h2>
+    <p style="color:var(--muted);margin-top:6px">선사시대부터 오늘까지, 시대를 따라 제주를 여행하며 스탬프를 모아요. 하나를 골라 주세요.</p>
+    <div class="pick">
+      <button type="button" data-pick="kids"><span class="ic">🧒</span>어린이용<small>초등학생 눈높이 · 쉬운 말 · 3지선다 퀴즈</small></button>
+      <button type="button" data-pick="teen"><span class="ic">🧑‍🎓</span>청소년용<small>중·고등학생 눈높이 · 자세한 설명 · 자료 출처 · 4지선다</small></button>
+    </div>
+    <div class="steps" aria-label="이용 방법"><span>① 장소를 눌러 이야기를 읽어요</span><span>② 퀴즈를 맞히면</span><span>③ 스탬프가 찍혀요!</span></div>
+    <p class="muted" style="margin-top:10px">나중에 위쪽 버튼으로 바꿀 수 있어요. 스탬프는 어린이용·청소년용이 따로 저장돼요.</p>
+  </div>
+</dialog>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+// 시대·설명·퀴즈·낱말 풀이는 story.json, 장소 정보는 /api/places(공공데이터 API), 참고 이미지는 /api/image(Pixabay)에서 가져온다.
+let ERAS = [], SPOTS = [], PLACES = [], GLOSS = {};
+let CONFIG = {imagesEnabled: false, feedbackEmail: null};
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const KEY = 'jejuStampTour';
+let save = {mode: null, kids: {}, teen: {}, name: '', big: false};
+try { Object.assign(save, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) {}
+const persist = () => { try { localStorage.setItem(KEY, JSON.stringify(save)); } catch (e) {} };
+
+let mode = save.mode || 'kids';
+let tab = 'road';
+let eraFilter = '';
+let current = null, opener = null;
+const eraOf = id => ERAS.find(e => e.id === id);
+const spotOf = id => SPOTS.find(s => s.id === id);
+const list = () => SPOTS.filter(s => mode === 'teen' || !s.teenOnly);
+const stamps = () => save[mode];
+const got = id => !!stamps()[id];
+const text = s => mode === 'teen' ? s.teen : s.kid;
+const quizOf = s => mode === 'teen' ? s.qt : s.qk;
+const explainOf = s => mode === 'teen' ? s.ext : s.exk;
+const areaOf = addr => String(addr || '').replace(/^제주특별자치도\s*/, '').split(/\s+/).slice(0, 2).join(' ');
+
+const RANKS = {
+  kids: ['시간여행 새싹 🌱','꼬마 탐험대원 🧭','역사 탐정 🔍','시간 여행가 ⏳','제주 시간여행 마스터 👑'],
+  teen: ['새내기 답사자','역사 탐구자','문화유산 큐레이터','시간 여행 가이드','제주 시간여행 마스터']
+};
+const rankOf = r => RANKS[mode][r >= 1 ? 4 : r >= .75 ? 3 : r >= .5 ? 2 : r >= .25 ? 1 : 0];
+function toast(msg){
+  const t = $('#toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('show'), 3500);
+}
+function eraStat(eraId){
+  const a = list().filter(s => s.era === eraId);
+  return {n: a.filter(s => got(s.id)).length, total: a.length};
+}
+
+// ── 낱말 풀이 ──
+let glossRe = null;
+function buildGloss(){
+  const terms = Object.keys(GLOSS).sort((a, b) => b.length - a.length).map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+  glossRe = terms.length ? new RegExp('(?<![가-힣])(?:' + terms.join('|') + ')', 'g') : null;   // 고유명사 중간(명월진성 등)은 건너뜀
+}
+function withGloss(s){
+  if (!glossRe) return esc(s);
+  let out = '', last = 0;
+  s.replace(glossRe, (m, off) => {
+    out += esc(s.slice(last, off)) + `<button type="button" class="term" data-term="${esc(m)}" aria-label="${esc(m)} 뜻 보기">${esc(m)}</button>`;
+    last = off + m.length; return m;
+  });
+  return out + esc(s.slice(last));
+}
+
+// ── 읽어 주기 ──
+const canSpeak = 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window;
+function stopSpeech(){ if (canSpeak) speechSynthesis.cancel(); const b = $('#ttsBtn'); if (b) { b.textContent = '🔊 읽어 주기'; b.setAttribute('aria-pressed', 'false'); } }
+function toggleSpeech(){
+  if (!canSpeak || !current) return;
+  if (speechSynthesis.speaking) { stopSpeech(); return; }
+  const u = new SpeechSynthesisUtterance(text(current));
+  u.lang = 'ko-KR'; u.rate = mode === 'kids' ? .9 : 1;
+  u.onend = u.onerror = () => { const b = $('#ttsBtn'); if (b) { b.textContent = '🔊 읽어 주기'; b.setAttribute('aria-pressed', 'false'); } };
+  speechSynthesis.speak(u);
+  const b = $('#ttsBtn'); b.textContent = '⏹ 멈추기'; b.setAttribute('aria-pressed', 'true');
+}
+
+// ── 상단 ──
+function renderTop(){
+  document.body.dataset.mode = mode;
+  document.body.classList.toggle('big', !!save.big);
+  $('#bigBtn').setAttribute('aria-pressed', !!save.big);
+  document.querySelectorAll('.seg button').forEach(b => b.setAttribute('aria-pressed', b.dataset.mode === mode));
+  const all = list(), n = all.filter(s => got(s.id)).length;
+  $('#progText').textContent = `스탬프 ${n} / ${all.length}`;
+  $('#progBar').style.width = (all.length ? n / all.length * 100 : 0) + '%';
+  $('#rank').textContent = rankOf(all.length ? n / all.length : 0);
+}
+
+// ── 시간여행 길 ──
+function renderRoad(){
+  const next = list().find(s => !got(s.id));
+  const kids = mode === 'kids';
+  $('#road').innerHTML = `
+    <div class="hero">
+      <h1>${kids ? '시간을 거슬러 제주를 여행해요!' : '선사시대에서 오늘까지, 제주 답사'}</h1>
+      <p>${kids ? '장소를 눌러 이야기를 읽고 퀴즈를 맞히면 스탬프가 찍혀요. 모두 모으면 마스터가 될 수 있어요!'
+               : '시대별 장소를 선택해 자료 기반 설명을 읽고 퀴즈를 풀면 스탬프를 받습니다. 시대마다 \'생각해 보기\'도 있어요.'}</p>
+      ${next ? `<button type="button" class="next" data-open="${next.id}">${kids ? '다음 스탬프 받으러 가기 ▶' : '다음 장소로 ▶'} (${esc(next.name)})</button>`
+             : `<p style="margin-top:10px;font-weight:800;color:var(--acc)">${kids ? '🎉 모든 스탬프를 모았어요! 스탬프북에서 확인해요.' : '🎉 모든 스탬프를 모았습니다. 스탬프북에서 수료증을 확인하세요.'}</p>`}
+    </div>
+    <div class="timeline">${ERAS.map(e => {
+      const st = eraStat(e.id), spots = list().filter(s => s.era === e.id);
+      return `<article class="era" style="--c:${e.color}">
+        <div class="eh"><span class="em" aria-hidden="true">${e.emoji}</span><div><h2>${esc(e.name)}</h2><div class="yr">${esc(e.years)}</div></div>
+          <div class="ep ${st.n === st.total ? 'done' : ''}">${st.n} / ${st.total}</div></div>
+        <p class="intro">${esc(kids ? e.kid : e.teen)}</p>
+        <div class="spots">${spots.map(s => `
+          <button type="button" class="spot ${got(s.id) ? 'got' : ''}" data-open="${s.id}">
+            <span class="st" aria-hidden="true">${got(s.id) ? e.emoji : '?'}</span>
+            <span class="nm">${esc(s.name)}<span class="ar">${esc(s.area)}</span><span class="lb">${got(s.id) ? '✓ 스탬프 받음' : '스탬프 받기'}</span></span>
+          </button>`).join('')}</div>
+        ${kids ? '' : `<div class="think">🤔 <b>생각해 보기</b> · ${esc(e.think)}</div>`}
+      </article>`;
+    }).join('')}</div>`;
+}
+
+// ── 기록 보관(저장 코드 · 이미지) ──
+const CODE_PREFIX = 'JTS1.';
+const encodeSave = () => CODE_PREFIX + btoa(unescape(encodeURIComponent(JSON.stringify({k: save.kids, t: save.teen, n: save.name}))));
+function importCode(raw){
+  const code = String(raw || '').trim();
+  if (!code.startsWith(CODE_PREFIX)) throw new Error('저장 코드 형식이 아니에요');
+  let o;
+  try { o = JSON.parse(decodeURIComponent(escape(atob(code.slice(CODE_PREFIX.length))))); } catch { throw new Error('코드를 읽을 수 없어요. 전체를 정확히 붙여넣었는지 확인해 주세요'); }
+  const ids = new Set(SPOTS.map(s => String(s.id)));
+  let added = 0;
+  for (const [src, dst] of [[o.k, 'kids'], [o.t, 'teen']]) {
+    if (!src || typeof src !== 'object') continue;
+    for (const [id, d] of Object.entries(src)) {
+      if (ids.has(id) && /^\d{4}-\d{2}-\d{2}$/.test(String(d)) && !save[dst][id]) { save[dst][id] = String(d); added++; }
+    }
+  }
+  if (typeof o.n === 'string' && o.n && !save.name) save.name = o.n.slice(0, 20);
+  persist();
+  return added;
+}
+async function copyText(t, area){
+  try { await navigator.clipboard.writeText(t); return true; } catch {}
+  area.select(); try { return document.execCommand('copy'); } catch { return false; }
+}
+function exportImage(){
+  const W = 1080, pad = 48, cols = 6, cell = (W - pad * 2) / cols, all = list();
+  const rows = ERAS.map(e => list().filter(s => s.era === e.id)).filter(a => a.length);
+  const H = 230 + rows.reduce((h, a) => h + 64 + Math.ceil(a.length / cols) * (cell + 8) + 16, 0) + 40;
+  const c = document.createElement('canvas'); c.width = W; c.height = H;
+  const g = c.getContext('2d'), font = '"Malgun Gothic","Apple SD Gothic Neo",sans-serif';
+  g.fillStyle = mode === 'kids' ? '#fff7e6' : '#f2f5fa'; g.fillRect(0, 0, W, H);
+  g.fillStyle = '#222'; g.textAlign = 'left'; g.textBaseline = 'alphabetic';
+  g.font = `bold 44px ${font}`; g.fillText('제주 시간여행 스탬프북', pad, 84);
+  const n = all.filter(s => got(s.id)).length;
+  g.font = `28px ${font}`; g.fillText(`${mode === 'kids' ? '어린이용' : '청소년용'} · 스탬프 ${n} / ${all.length} · ${rankOf(all.length ? n / all.length : 0)}`, pad, 132);
+  if (save.name) { g.font = `bold 26px ${font}`; g.fillText(save.name, pad, 174); }
+  let y = 215;
+  rows.forEach(a => {
+    const e = eraOf(a[0].era);
+    g.fillStyle = e.color; g.font = `bold 32px ${font}`; g.fillText(`${e.emoji} ${e.name}`, pad, y + 36);
+    y += 64;
+    a.forEach((s, i) => {
+      const cx = pad + (i % cols) * cell + cell / 2, cy = y + Math.floor(i / cols) * (cell + 8) + cell / 2 - 10, r = cell * .36;
+      g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2);
+      if (got(s.id)) {
+        g.fillStyle = '#fff'; g.fill(); g.lineWidth = 6; g.strokeStyle = e.color; g.setLineDash([]); g.stroke();
+        g.textAlign = 'center'; g.fillStyle = e.color; g.font = `44px ${font}`; g.textBaseline = 'middle'; g.fillText(e.emoji, cx, cy);
+        g.textBaseline = 'alphabetic'; g.font = `bold 17px ${font}`; g.fillStyle = '#333';
+        g.fillText(s.name.length > 9 ? s.name.slice(0, 8) + '…' : s.name, cx, cy + r + 24);
+      } else {
+        g.fillStyle = '#fafafa'; g.fill(); g.lineWidth = 3; g.strokeStyle = '#999'; g.setLineDash([8, 6]); g.stroke(); g.setLineDash([]);
+        g.textAlign = 'center'; g.fillStyle = '#888'; g.font = `bold 36px ${font}`; g.textBaseline = 'middle'; g.fillText('?', cx, cy); g.textBaseline = 'alphabetic';
+      }
+      g.textAlign = 'left';
+    });
+    y += Math.ceil(a.length / cols) * (cell + 8) + 16;
+  });
+  c.toBlob(b => {
+    const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'jeju-stampbook.png';
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  });
+}
+
+// ── 스탬프북 ──
+function renderBook(){
+  const all = list(), n = all.filter(s => got(s.id)).length, kids = mode === 'kids';
+  const done = n === all.length && all.length > 0;
+  const eraDone = ERAS.filter(e => { const s = eraStat(e.id); return s.total && s.n === s.total; }).length;
+  $('#book').innerHTML = `
+    <div class="card sum">
+      <div><div class="big">${n}<span style="font-size:.4em;color:var(--muted)"> / ${all.length}</span></div><div>모은 스탬프</div></div>
+      <div><div class="big">${eraDone}<span style="font-size:.4em;color:var(--muted)"> / ${ERAS.length}</span></div><div>${kids ? '완주한 시대 🏅' : '완주한 시대'}</div></div>
+      <div><div style="font-size:1.2em;font-weight:800;color:var(--acc)">${esc(rankOf(all.length ? n / all.length : 0))}</div><div>${kids ? '내 칭호' : '현재 등급'}</div></div>
+    </div>
+    ${ERAS.map(e => {
+      const st = eraStat(e.id), spots = list().filter(s => s.era === e.id);
+      return `<div class="card brow" style="--c:${e.color}"><h3><span style="font-size:1.4em" aria-hidden="true">${e.emoji}</span>${esc(e.name)}
+        <span class="tag">${st.n === st.total ? '🏅 시대 완주!' : st.n + ' / ' + st.total}</span></h3>
+        <div class="sgrid">${spots.map(s => got(s.id)
+          ? `<button type="button" class="slot got" data-open="${s.id}" style="--rot:${(s.id % 9) - 4}deg" aria-label="${esc(s.name)} 스탬프 받음 ${esc(stamps()[s.id])}"><span><span class="e" aria-hidden="true">${e.emoji}</span>${esc(s.name)}<small>${esc(stamps()[s.id])}</small></span></button>`
+          : `<button type="button" class="slot" data-open="${s.id}" aria-label="${esc(s.name)} 스탬프 받기">?</button>`).join('')}</div></div>`;
+    }).join('')}
+    ${done ? `<div class="card cert" id="cert">
+        <div style="font-size:2.4em" aria-hidden="true">🏆</div><h2>${kids ? '제주 시간여행 마스터 증서' : '제주 시간여행 완주 수료증'}</h2>
+        <p style="margin-bottom:12px">${kids ? '모든 시대의 스탬프를 모은' : '선사시대부터 오늘까지 모든 시대의 스탬프를 모은'}</p>
+        <input id="nm" placeholder="이름을 적어 보세요" value="${esc(save.name)}" maxlength="20" aria-label="이름">
+        <p style="margin:12px 0">${kids ? '위 어린이를 제주 시간여행 마스터로 임명합니다!' : '위 사람이 제주 역사문화 스탬프 투어를 완주했음을 증명합니다.'}</p>
+        <p style="color:var(--muted);font-size:.85em">${new Date().toISOString().slice(0, 10)}</p>
+        <button type="button" class="next noprint" id="printCert">🖨️ 인쇄하기</button></div>` : ''}
+    <div class="card">
+      <h3>💾 내 기록 보관하기</h3>
+      <p class="muted">스탬프는 이 브라우저에만 저장돼요. 다른 기기로 옮기거나 백업하려면 저장 코드를 쓰고, 자랑하고 싶다면 이미지로 저장해요.</p>
+      <div class="row"><button type="button" class="btn" id="btnCode">저장 코드 만들기</button><button type="button" class="btn" id="btnImg">🖼️ 스탬프북 이미지로 저장</button></div>
+      <textarea id="codeBox" rows="3" aria-label="저장 코드" placeholder="‘저장 코드 만들기’를 누르면 여기에 코드가 나와요. 불러오려면 이곳에 코드를 붙여넣고 ‘불러오기’를 눌러요."></textarea>
+      <div class="row"><button type="button" class="btn" id="btnCopy">복사</button><button type="button" class="btn solid" id="btnLoad">불러오기</button></div>
+    </div>
+    <div style="text-align:right"><button type="button" class="reset" id="resetBtn">${kids ? '어린이용' : '청소년용'} 스탬프 처음부터 다시</button></div>`;
+}
+
+// ── 더 알아보기: 투어에 넣지 않은 장소(API 전체 결과 중) ──
+function renderMore(){
+  const ids = new Set(SPOTS.map(s => s.id));
+  const rest = PLACES.filter(p => !ids.has(p.id));
+  $('#more').innerHTML = `
+    <div class="card"><h3>🔎 더 알아보기</h3>
+      <p class="muted">스탬프 투어에 넣지 않은 ${rest.length}곳이에요. 원본 자료의 특성상 <b>장소 이름과 자료 제목이 서로 다를 수 있어요</b>. 자세한 내용은 원문 링크에서 확인하세요.${mode === 'kids' ? ' 어른과 함께 살펴봐요.' : ''}</p>
+      <input class="search" id="moreQ" type="search" placeholder="장소·지역·자료 제목 검색" aria-label="더 알아보기 검색" style="margin-top:8px"></div>
+    <div class="more-list" id="moreList"></div>`;
+  const draw = () => {
+    const q = $('#moreQ').value.trim().toLowerCase();
+    const rows = rest.filter(p => !q || (p.name + ' ' + areaOf(p.addr) + ' ' + (p.title || '')).toLowerCase().includes(q));
+    $('#moreList').innerHTML = rows.length ? rows.map(p => `<div class="more-item"><b>${esc(p.name)}</b>
+      <span class="muted">${esc(areaOf(p.addr))}</span><span class="muted">자료: ${esc(p.title || '-')}</span>
+      ${p.url ? `<a href="${esc(p.url)}" target="_blank" rel="noopener">원문 ↗</a>` : ''}</div>`).join('') : '<p class="muted">검색 결과가 없어요.</p>';
+  };
+  $('#moreQ').addEventListener('input', draw); draw();
+}
+
+// ── 지도 (인터넷 연결 시) ──
+const hasL = typeof L !== 'undefined';
+let tmap, tlayer;
+function pinIcon(s){
+  const e = eraOf(s.era);
+  return L.divIcon({className: 'pinI' + (got(s.id) ? ' got' : ''), html: `<span style="--c:${e.color}">${e.emoji}</span>`,
+    iconSize: [36, 36], iconAnchor: [18, 18], popupAnchor: [0, -18]});
+}
+function renderChips(){
+  $('#chips').innerHTML = `<button type="button" data-era="" aria-pressed="${!eraFilter}">전체</button>` +
+    ERAS.map(e => `<button type="button" data-era="${e.id}" aria-pressed="${eraFilter === e.id}">${e.emoji} ${esc(e.name)}</button>`).join('');
+}
+function renderMap(fit){
+  renderChips();
+  if (!hasL) { $('#tmap').outerHTML = '<div class="nomap" id="tmap">지도는 인터넷에 연결되어 있을 때 볼 수 있어요.<br>‘시간여행 길’ 탭에서 장소를 고를 수 있어요.</div>'; return; }
+  if (!tmap) {
+    tmap = L.map('tmap').setView([33.38, 126.55], 10);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom: 18,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'}).addTo(tmap);
+    tlayer = L.layerGroup().addTo(tmap);
+  }
+  tlayer.clearLayers();
+  const rows = list().filter(s => !eraFilter || s.era === eraFilter);
+  rows.forEach(s => {
+    const e = eraOf(s.era);
+    L.marker([s.lat, s.lng], {icon: pinIcon(s), title: s.name, alt: s.name})
+      .bindPopup(`<div class="pop"><b>${esc(s.name)}</b><br>${e.emoji} ${esc(e.name)}${got(s.id) ? ' · ✓ 스탬프 받음' : ''}<br><button type="button" data-open="${s.id}">${got(s.id) ? '다시 보기' : '스탬프 받으러 가기'}</button></div>`)
+      .addTo(tlayer);
+  });
+  tmap.invalidateSize();
+  if (fit && rows.length) tmap.fitBounds(L.latLngBounds(rows.map(s => [s.lat, s.lng])).pad(.15), {maxZoom: 12});
+}
+
+// ── 장소 상세 + 퀴즈 ──
+const dlg = $('#dlg');
+const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.random() * (i + 1) | 0; [a[i], a[j]] = [a[j], a[i]]; } return a; };
+function awardHtml(s, fresh){
+  const e = eraOf(s.era), ex = explainOf(s);
+  return `${ex ? `<div class="explain"><b>💡 ${mode === 'kids' ? '왜 그럴까요?' : '해설'}</b><p>${withGloss(ex)}</p></div>` : ''}
+    <div class="award ${fresh ? 'pop-in' : ''}" style="--c:${e.color}"><div class="stamp" aria-hidden="true">${e.emoji}</div>
+    <div><b>${mode === 'kids' ? (fresh ? '스탬프 획득! 🎉' : '이미 받은 스탬프예요 ✓') : (fresh ? '스탬프 획득!' : '획득한 스탬프')}</b><br>
+    <span class="muted">${esc(s.name)} · ${esc(stamps()[s.id] || '')}</span></div></div>`;
+}
+// 참고 이미지: 서버가 Pixabay에서 받아 둔 사진. 없으면(키 미설정 포함) 시대 일러스트를 그대로 보여 준다.
+async function loadImage(s){
+  if (!CONFIG.imagesEnabled) return;
+  try {
+    const r = await fetch('/api/image?id=' + s.id);
+    const j = await r.json();
+    if (!r.ok || !j.found || !current || current.id !== s.id) return;
+    const fig = $('#fig'); if (!fig) return;
+    fig.innerHTML = `<img src="${esc(j.src)}" alt="${esc(s.name)}과 어울리는 참고 이미지">
+      <figcaption class="cap">참고 이미지예요. 실제 장소의 모습과 다를 수 있어요. · 사진: ${esc(j.user)} / <a href="${esc(j.pageURL)}" target="_blank" rel="noopener">Pixabay</a></figcaption>`;
+  } catch { /* 이미지는 선택 기능: 실패하면 일러스트 유지 */ }
+}
+function openSpot(id, from){
+  const s = spotOf(id); if (!s) return;
+  const e = eraOf(s.era), teen = mode === 'teen', q = quizOf(s);
+  current = s; opener = from || document.activeElement;
+  const osm = `https://www.openstreetmap.org/?mlat=${s.lat}&mlon=${s.lng}#map=16/${s.lat}/${s.lng}`;
+  const mail = CONFIG.feedbackEmail ? `mailto:${encodeURIComponent(CONFIG.feedbackEmail).replace(/%40/g, '@')}?subject=${encodeURIComponent('[스탬프 투어] 내용 확인 요청 - ' + s.name + ' (#' + s.id + ')')}&body=${encodeURIComponent('장소: ' + s.name + ' (#' + s.id + ')\n어떤 부분이 이상한가요?\n')}` : '';
+  dlg.style.setProperty('--c', e.color);
+  dlg.innerHTML = `
+    <div class="mh"><span>${e.emoji} ${esc(e.name)}</span><button type="button" class="x" data-close aria-label="닫기">✕</button></div>
+    <div class="mb">
+      <h2 id="dlgTitle">${esc(s.name)}</h2>
+      <div class="loc">📍 ${esc(s.area)} · <a href="${osm}" target="_blank" rel="noopener">지도에서 위치 보기</a></div>
+      <figure class="fig" id="fig"><div class="illus" aria-hidden="true">${e.emoji}</div></figure>
+      ${s.sensitive ? `<div class="warn" role="note">⚠️ ${teen ? '이 장소는 아픈 역사를 다룹니다. 희생된 분들을 존중하는 마음으로 읽어 주세요.' : '이 장소는 슬프고 아픈 역사를 담고 있어요. 어른과 함께 읽어 주세요.'}</div>` : ''}
+      ${canSpeak ? '<button type="button" class="tts" id="ttsBtn" aria-pressed="false">🔊 읽어 주기</button>' : ''}
+      <div class="story"><p>${withGloss(text(s))}</p></div>
+      <div class="gloss" id="glossBox" hidden aria-live="polite"></div>
+      <p class="muted" style="margin-bottom:6px">${mode === 'kids' ? '밑줄 친 낱말을 누르면 뜻이 나와요.' : '밑줄 친 낱말을 누르면 뜻풀이를 볼 수 있어요.'}</p>
+      ${s.note ? `<div class="note">ℹ️ ${esc(s.note)}</div>` : ''}
+      ${teen ? `<details class="src"><summary>📚 자료 출처</summary><dl>
+          <dt>자료명</dt><dd>${esc(s.title)}</dd><dt>저작자</dt><dd>${esc(s.author)}</dd><dt>발행일</dt><dd>${esc(s.date)}</dd>
+          <dt>원문</dt><dd><a href="${esc(s.url)}" target="_blank" rel="noopener">제주 문화 디지털콘텐츠에서 보기 ↗</a></dd></dl></details>`
+        : `<p class="src"><a href="${esc(s.url)}" target="_blank" rel="noopener">어른과 함께 원문 자료 보기 ↗</a></p>`}
+      <div id="qbox"></div>
+      ${mail ? `<a class="report" href="${mail}">✉️ 내용이 이상하면 알려 주세요</a>` : ''}
+    </div>`;
+  const box = $('#qbox');
+  if (got(s.id)) { box.innerHTML = awardHtml(s, false); }
+  else {
+    const correct = q[1], opts = shuffle(q.slice(1));
+    box.innerHTML = `<div class="quiz"><h3>${mode === 'kids' ? '🎯 퀴즈를 맞히면 스탬프!' : '🎯 퀴즈'}</h3><p class="q" id="qq">${esc(q[0])}</p>
+      <div class="opts" role="group" aria-labelledby="qq">${opts.map((o, i) => `<button type="button" data-o="${i}">${esc(o)}</button>`).join('')}</div><div class="fb" aria-live="polite"></div></div>`;
+    box.querySelector('.opts').addEventListener('click', ev => {
+      const b = ev.target.closest('button'); if (!b || b.disabled) return;
+      const fb = box.querySelector('.fb');
+      if (opts[+b.dataset.o] === correct) {
+        box.querySelectorAll('.opts button').forEach(x => x.disabled = true);
+        b.classList.add('ok');
+        stamps()[s.id] = new Date().toISOString().slice(0, 10); persist();
+        fb.className = 'fb ok'; fb.textContent = mode === 'kids' ? '정답이에요! 👏' : '정답!';
+        setTimeout(() => { if (current && current.id === s.id) box.innerHTML = awardHtml(s, true); }, 450);
+        renderAll();
+        const st = eraStat(s.era);
+        if (list().every(x => got(x.id))) toast('🏆 모든 스탬프 완성! 스탬프북에서 확인해요');
+        else if (st.n === st.total) toast(`🏅 ${e.name} 완주!`);
+      } else {
+        b.classList.add('bad'); b.disabled = true;
+        fb.className = 'fb bad';
+        fb.textContent = mode === 'kids' ? '앗, 아쉬워요! 이야기를 다시 읽고 도전해 봐요 💪' : '오답이야. 위 설명을 다시 읽고 골라 보자.';
+      }
+    });
+  }
+  if (!dlg.open) dlg.showModal();
+  dlg.scrollTop = 0;
+  loadImage(s);
+}
+dlg.addEventListener('close', () => {
+  stopSpeech(); current = null;
+  if (opener && opener.isConnected && typeof opener.focus === 'function') opener.focus();
+});
+
+// ── 안내 화면 ──
+function openInfo(){
+  const d = $('#info');
+  d.style.setProperty('--c', 'var(--acc)');
+  const sens = SPOTS.filter(s => s.sensitive).map(s => s.name);
+  d.innerHTML = `<div class="mh"><span>ℹ️ 이 사이트 안내</span><button type="button" class="x" data-close-info aria-label="닫기">✕</button></div>
+    <div class="mb"><h2 id="infoTitle">이 사이트는 어떻게 만들었나요?</h2>
+      <h3>자료</h3><p>제주특별자치도가 공개한 <b>제주역사문화 위치정보·일반정보</b>(기준일 2022-12-09)를 바탕으로 했어요. 장소 이름·좌표·자료 제목·원문 링크는 공공데이터 API에서 받아와요.</p>
+      <h3>시대 구분</h3><p>원본 자료에는 시대 정보가 없어요. 자료의 제목·주제·내용을 보고 <b>이 사이트에서 정리한 구분</b>이라 정확한 연대와 다를 수 있어요. 여러 시대에 걸친 민속은 ‘전통 생활과 믿음’으로 묶었어요.</p>
+      <h3>설명과 퀴즈</h3><p>설명·퀴즈·해설은 자료에 적힌 내용을 쉽게 풀어 썼어요. 자료에 없는 일반 상식이나 해석을 더한 곳에는 ‘ℹ️’ 표시로 알려 줘요. 추정인 내용은 ‘추정’이라고 적었어요. 궁금하면 원문 링크에서 직접 확인해 보세요.</p>
+      <h3>그림</h3><p>장소 그림은 Pixabay의 사진을 <b>참고 이미지</b>로 보여 주는 것이라 실제 장소의 모습과 다를 수 있어요. 사진 아래에 촬영자와 출처를 적었어요.</p>
+      <h3>선생님·보호자께</h3>
+      <ul><li>${sens.length ? esc(sens.join(', ')) + '은(는) ' : ''}아픈 역사(일제강점기 강제 노역, 1950년 예비검속 희생 등)를 다뤄요. 이 장소들에는 읽기 전에 안내 문구가 나와요.</li>
+      <li>어린이용에는 일부 장소(청소년용에만 있는 2곳)를 넣지 않았어요. 어린이와 함께 읽으며 이야기를 나눠 주세요.</li>
+      <li>스탬프는 현장 방문이 아니라 퀴즈 정답으로 받아요. 현장 답사 때는 안전과 문화유산 보호 수칙을 지켜 주세요.</li></ul>
+      <h3>내 기록</h3><p>스탬프는 이 브라우저에만 저장돼요. 스탬프북 탭에서 ‘저장 코드’로 옮기거나 이미지로 저장할 수 있어요.</p>
+      ${CONFIG.feedbackEmail ? `<h3>내용 오류 알리기</h3><p>각 장소 화면 아래의 ‘내용이 이상하면 알려 주세요’로 알려 주세요.</p>` : ''}
+    </div>`;
+  if (!d.open) d.showModal();
+}
+
+function renderAll(){
+  renderTop(); renderRoad(); renderBook(); renderMore();
+  if (tab === 'map') renderMap(false);
+}
+function setTab(t){
+  tab = t;
+  document.querySelectorAll('.tabs button').forEach(b => b.setAttribute('aria-selected', b.dataset.tab === t));
+  $('#road').hidden = t !== 'road'; $('#mapTab').hidden = t !== 'map'; $('#book').hidden = t !== 'book'; $('#more').hidden = t !== 'more';
+  if (t === 'map') renderMap(true);
+}
+function setMode(m){
+  mode = m; save.mode = m; persist();
+  if (dlg.open) dlg.close();
+  renderAll();
+}
+
+// ── 이벤트 ──
+document.addEventListener('click', async e => {
+  const o = e.target.closest('[data-open]'); if (o) { openSpot(+o.dataset.open, o); return; }
+  if (e.target.closest('[data-close]')) { dlg.close(); return; }
+  if (e.target.closest('[data-close-info]')) { $('#info').close(); return; }
+  if (e.target === dlg) dlg.close();            // 배경 클릭
+  if (e.target === $('#info')) $('#info').close();
+  const term = e.target.closest('.term');
+  if (term) {
+    const box = $('#glossBox'), t = term.dataset.term;
+    if (!box.hidden && box.dataset.t === t) { box.hidden = true; return; }
+    box.dataset.t = t; box.innerHTML = `📖 <b>${esc(t)}</b> — ${esc(GLOSS[t] || '')}`; box.hidden = false; return;
+  }
+  if (e.target.id === 'ttsBtn') { toggleSpeech(); return; }
+  if (e.target.id === 'infoBtn' || e.target.id === 'infoBtn2') { openInfo(); return; }
+  if (e.target.id === 'bigBtn') { save.big = !save.big; persist(); renderTop(); return; }
+  const m = e.target.closest('.seg button'); if (m) { setMode(m.dataset.mode); return; }
+  const t = e.target.closest('.tabs button'); if (t) { setTab(t.dataset.tab); return; }
+  const c = e.target.closest('#chips button'); if (c) { eraFilter = c.dataset.era; renderMap(true); return; }
+  const p = e.target.closest('[data-pick]'); if (p) { $('#welcome').close(); setMode(p.dataset.pick); return; }
+  if (e.target.id === 'resetBtn' && confirm('이 모드의 스탬프를 모두 지우고 처음부터 시작할까요?')) { save[mode] = {}; persist(); renderAll(); return; }
+  if (e.target.id === 'printCert') { document.body.classList.add('print-cert'); window.print(); return; }
+  if (e.target.id === 'btnCode') { const b = $('#codeBox'); b.value = encodeSave(); b.select(); return; }
+  if (e.target.id === 'btnCopy') {
+    const b = $('#codeBox'); if (!b.value) b.value = encodeSave();
+    toast(await copyText(b.value, b) ? '저장 코드를 복사했어요' : '복사하지 못했어요. 코드를 직접 선택해서 복사해 주세요'); return;
+  }
+  if (e.target.id === 'btnLoad') {
+    try { const n = importCode($('#codeBox').value); renderAll(); toast(n ? `스탬프 ${n}개를 불러왔어요` : '새로 추가할 스탬프가 없어요'); }
+    catch (err) { toast(err.message); }
+    return;
+  }
+  if (e.target.id === 'btnImg') { exportImage(); return; }
+  if (e.target.id === 'retryBtn') boot();
+});
+window.addEventListener('afterprint', () => document.body.classList.remove('print-cert'));
+document.addEventListener('input', e => { if (e.target.id === 'nm') { save.name = e.target.value; persist(); } });
+// 처음 선택 화면은 고르기 전에는 닫히지 않는다(Esc 포함)
+$('#welcome').addEventListener('cancel', e => e.preventDefault());
+
+// ── 시작 ──
+async function boot(){
+  renderTop();
+  if (!save.mode && !$('#welcome').open) $('#welcome').showModal();   // 자료를 불러오기 전에 먼저 고르게 한다
+  $('#road').innerHTML = '<div class="hero"><h1>자료를 불러오는 중…</h1><p>제주 역사문화 API에서 장소 정보를 가져오고 있어요.</p></div>';
+  fetch('/api/config').then(r => r.json()).then(c => { CONFIG = {...CONFIG, ...c}; }).catch(() => {});
+  let api, lost = 0;
+  try {
+    const [story, a] = await Promise.all([
+      fetch('story.json').then(r => { if (!r.ok) throw new Error('이야기 자료를 불러오지 못했어요'); return r.json(); }),
+      fetch('/api/places').then(async r => {
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(j.error || 'HTTP ' + r.status);
+        return j;
+      })
+    ]);
+    api = a; PLACES = a.places; ERAS = story.eras; GLOSS = story.glossary || {}; buildGloss();
+    const P = new Map(a.places.map(p => [p.id, p]));
+    SPOTS = story.stories.filter(s => P.has(s.id)).map(s => {
+      const p = P.get(s.id);
+      return {...s, name: p.name, lat: p.lat, lng: p.lng, area: areaOf(p.addr),
+        title: p.title || '-', date: p.date || '-', author: p.author || '-', url: p.url || '#'};
+    });
+    if (!SPOTS.length) throw new Error('API 결과에서 스탬프 장소를 찾지 못했습니다');
+    lost = story.stories.length - SPOTS.length;
+  } catch (e) {
+    // 사용자에게는 쉬운 안내만 보여 주고, 자세한 원인은 서버 로그에서 확인한다.
+    console.error('[boot]', e);
+    $('#road').innerHTML = `<div class="hero"><h1>자료를 불러오지 못했어요 😢</h1><p>잠시 뒤에 다시 시도해 주세요. 계속 안 되면 사이트 관리자에게 알려 주세요.</p>
+      <button type="button" class="next" id="retryBtn">다시 시도</button></div>`;
+    return;
+  }
+  renderAll();
+  if (api.stale) toast('최신 자료를 받지 못해 저장된 자료를 보여 줘요');
+  else if (lost) toast(`일부 장소 ${lost}곳은 자료에 없어 건너뛰었어요`);
+}
+boot();
+</script>
+</body>
+</html>
