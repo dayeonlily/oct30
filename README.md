@@ -79,7 +79,10 @@ node src/build.mjs     # public/story.json, public/index.html 생성
 
 요청 파라미터와 응답 해석은 `adapter.mjs`에 모여 있습니다(`buildUrl`, `extractPage`, `normalize`). `{data:[...]}`(odcloud)와 `{response:{body:{items}}}`(기존 data.go.kr) 형태의 **JSON**을 지원하고 **XML은 지원하지 않습니다**.
 
-> 공공데이터포털에서 확인한 두 데이터셋(위치정보 15109570, 일반정보 15109587)은 CSV 파일 데이터로만 등록되어 있어 공개된 API 주소·응답 형식을 확인하지 못했습니다. 발급받은 API의 실제 주소와 응답 샘플에 맞춰 위 함수를 조정하세요.
+> 이 데이터셋(위치정보 15109570, 일반정보 15109587)의 API는 공공데이터포털의 odcloud(`api.odcloud.kr`)이며 응답은 `{ data: [...] }` 형태입니다.
+> 환경변수 `..._URL`에는 **데이터 주소**(`https://api.odcloud.kr/api/<번호>/v1/uddi:...`)를 넣는 것이 정석이지만,
+> 포털에서 복사한 **Swagger 문서 주소**를 넣어도 서버가 문서 안의 실제 데이터 주소를 찾아 호출합니다(`odcloud.kr` 도메인만 따라감).
+> 다른 형식의 API를 쓸 때는 위 세 함수를 조정하세요. 형식이 맞지 않으면 오류 메시지에 응답의 **구조(필드 이름)** 가 표시되어 원인을 알 수 있습니다.
 
 ## API 없이 흐름 확인하기 (개발용)
 
