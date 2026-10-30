@@ -51,6 +51,13 @@ delete process.env.JEJU_CULTURE_LOCATION_URL;
 r = await call(places); assert.equal(r.code, 502); assert.match(r.body.error, /JEJU_CULTURE_LOCATION_URL/); ok('환경변수 누락 시 이름만 안내');
 process.env.JEJU_CULTURE_LOCATION_URL = 'http://127.0.0.1:5190/location';
 
+console.log('swagger');
+const { resolveSwagger } = await import('../lib/places.mjs');
+const doc = { swagger: '2.0', host: 'api.odcloud.kr', basePath: '/api', paths: { '/15109570/v1/uddi:8781448b-81a8-487c-bc95-d26335bafa82': { get: {} } } };
+assert.equal(resolveSwagger(doc), 'https://api.odcloud.kr/api/15109570/v1/uddi:8781448b-81a8-487c-bc95-d26335bafa82'); ok('Swagger 문서 주소 → 실제 데이터 주소');
+assert.equal(resolveSwagger({ ...doc, host: 'evil.example.com' }), null); ok('odcloud.kr 이외 도메인은 따라가지 않음(키 보호)');
+assert.equal(resolveSwagger({ data: [] }), null); ok('일반 데이터 응답은 그대로');
+
 console.log('config');
 delete process.env.PIXABAY_API_KEY; delete process.env.BLOB_READ_WRITE_TOKEN; delete process.env.FEEDBACK_EMAIL;
 r = await call(config); assert.deepEqual(r.body, { imagesEnabled: false, feedbackEmail: null }); ok('키 없으면 이미지 꺼짐');
